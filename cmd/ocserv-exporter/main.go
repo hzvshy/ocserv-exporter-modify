@@ -100,6 +100,7 @@ func main() {
 	var (
 		interval = flag.Duration("interval", 30*time.Second, "Delay between occtl scrape.")
 		listen   = flag.String("listen", "127.0.0.1:8000", "Prometheus HTTP listen IP and port.")
+		socketFile = flag.String("socket-file", "/var/run/occtl.socket", "Path to occtl socket file.")
 	)
 	flag.Parse()
 
@@ -127,7 +128,7 @@ func main() {
 		vpnUserStartTime,
 	)
 
-	occtlCli, err := occtl.NewClient(&occtl.OcctlCommander{})
+	occtlCli, err := occtl.NewClient(&occtl.OcctlCommander{SocketPath: *socketFile})
 	if err != nil {
 		log.Fatalf("Failed to initialize occtl client: %v", err)
 	}
