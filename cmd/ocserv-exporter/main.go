@@ -133,6 +133,8 @@ func main() {
 		vpnRX,
 		vpnUserTX,
 		vpnUserRX,
+		vpnUserAverageTX,
+		vpnUserAverageRX,
 		vpnUserStartTime,
 	)
 
