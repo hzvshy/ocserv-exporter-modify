@@ -1,7 +1,10 @@
 package main
 
 import (
+	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -88,6 +91,8 @@ func (e *Exporter) updateUsers() {
 
 	vpnUserTX.Reset()
 	vpnUserRX.Reset()
+	vpnUserAverageTX.Reset()
+	vpnUserAverageRX.Reset()
 	vpnUserStartTime.Reset()
 	users, err := e.occtlCli.ShowUsers()
 	if err != nil {
@@ -97,9 +102,18 @@ func (e *Exporter) updateUsers() {
 	}
 
 	for _, user := range users {
-		vpnUserTX.WithLabelValues(user.Username, user.RemoteIP, user.MTU, user.VPNIPv4, user.VPNIPv6, user.Device).Set(float64(user.RawTX))
-		vpnUserRX.WithLabelValues(user.Username, user.RemoteIP, user.MTU, user.VPNIPv4, user.VPNIPv6, user.Device).Set(float64(user.RawRX))
-		vpnUserStartTime.WithLabelValues(user.Username, user.RemoteIP, user.MTU, user.VPNIPv4, user.VPNIPv6, user.Device).Set(float64(user.RawConnectedAt))
+		txSpeed, err1 := ParseSpeedString(user.AverageTX)
+		rxSpeed, err2 := ParseSpeedString(user.AverageRX)
+		if err1 != nil || err2 != nil {
+			// 打印日志或跳过该用户
+			continue
+		}
+
+		vpnUserTX.WithLabelValues(user.Username, user.RemoteIP, user.MTU, user.VPNIPv4, user.VPNIPv6, user.Device, user.UserAgent).Set(float64(user.RawTX))
+		vpnUserRX.WithLabelValues(user.Username, user.RemoteIP, user.MTU, user.VPNIPv4, user.VPNIPv6, user.Device, user.UserAgent).Set(float64(user.RawRX))
+		vpnUserAverageTX.WithLabelValues(user.Username, user.RemoteIP, user.MTU, user.VPNIPv4, user.VPNIPv6, user.Device, user.UserAgent).Set(float64(txSpeed))
+		vpnUserAverageRX.WithLabelValues(user.Username, user.RemoteIP, user.MTU, user.VPNIPv4, user.VPNIPv6, user.Device, user.UserAgent).Set(float64(rxSpeed))
+		vpnUserStartTime.WithLabelValues(user.Username, user.RemoteIP, user.MTU, user.VPNIPv4, user.VPNIPv6, user.Device, user.UserAgent).Set(float64(user.RawConnectedAt))
 	}
 }
 
@@ -107,4 +121,33 @@ func (e *Exporter) metricsHandler(rw http.ResponseWriter, r *http.Request) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	e.promHandler.ServeHTTP(rw, r)
+}
+
+// 将 "223.9 KB/sec" 转换为 byte/sec 的 float64 数值
+func ParseSpeedString(speedStr string) (float64, error) {
+	parts := strings.Fields(speedStr) // ["223.9", "KB/sec"]
+	if len(parts) < 2 {
+		return 0, errors.New("invalid speed string")
+	}
+
+	valueStr := parts[0]              // "223.9"
+	unit := strings.ToUpper(parts[1]) // "KB/SEC"
+
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	switch {
+	case strings.HasPrefix(unit, "bytes"):
+		return value, nil
+	case strings.HasPrefix(unit, "KB"):
+		return value * 1024, nil
+	case strings.HasPrefix(unit, "MB"):
+		return value * 1024 * 1024, nil
+	case strings.HasPrefix(unit, "GB"):
+		return value * 1024 * 1024 * 1024, nil
+	default:
+		return 0, errors.New("unknown unit")
+	}
 }

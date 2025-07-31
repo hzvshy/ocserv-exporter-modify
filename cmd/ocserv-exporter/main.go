@@ -85,21 +85,29 @@ var (
 	vpnUserTX = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "vpn_user_tx_bytes",
 		Help: "Total TX usage in bytes of a user.",
-	}, []string{"username", "remote_ip", "mtu", "vpn_ipv4", "vpn_ipv6", "device"})
+	}, []string{"username", "remote_ip", "mtu", "vpn_ipv4", "vpn_ipv6", "device", "user_agent"})
 	vpnUserRX = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "vpn_user_rx_bytes",
 		Help: "Total RX usage in bytes of a user.",
-	}, []string{"username", "remote_ip", "mtu", "vpn_ipv4", "vpn_ipv6", "device"})
+	}, []string{"username", "remote_ip", "mtu", "vpn_ipv4", "vpn_ipv6", "device", "user_agent"})
+	vpnUserAverageTX = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "vpn_user_tx_bps",
+		Help: "TX average rate for a user.",
+	}, []string{"username", "remote_ip", "mtu", "vpn_ipv4", "vpn_ipv6", "device", "user_agent"})
+	vpnUserAverageRX = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "vpn_user_rx_bps",
+		Help: "RX average rate for a user.",
+	}, []string{"username", "remote_ip", "mtu", "vpn_ipv4", "vpn_ipv6", "device", "user_agent"})
 	vpnUserStartTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "vpn_user_start_time_seconds",
 		Help: "Start time of user session since unix epoch in seconds.",
-	}, []string{"username", "remote_ip", "mtu", "vpn_ipv4", "vpn_ipv6", "device"})
+	}, []string{"username", "remote_ip", "mtu", "vpn_ipv4", "vpn_ipv6", "device", "user_agent"})
 )
 
 func main() {
 	var (
-		interval = flag.Duration("interval", 30*time.Second, "Delay between occtl scrape.")
-		listen   = flag.String("listen", "127.0.0.1:8000", "Prometheus HTTP listen IP and port.")
+		interval   = flag.Duration("interval", 30*time.Second, "Delay between occtl scrape.")
+		listen     = flag.String("listen", "127.0.0.1:8000", "Prometheus HTTP listen IP and port.")
 		socketFile = flag.String("socket-file", "/var/run/occtl.socket", "Path to occtl socket file.")
 	)
 	flag.Parse()
@@ -125,6 +133,8 @@ func main() {
 		vpnRX,
 		vpnUserTX,
 		vpnUserRX,
+		vpnUserAverageTX,
+		vpnUserAverageRX,
 		vpnUserStartTime,
 	)
 
