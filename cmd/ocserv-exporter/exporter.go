@@ -106,6 +106,7 @@ func (e *Exporter) updateUsers() {
 		rxSpeed, err2 := ParseSpeedString(user.AverageRX)
 		if err1 != nil || err2 != nil {
 			// 打印日志或跳过该用户
+			log.Errorf("Failed to parse speed for user %s: %v, %v", user.Username, err1, err2)
 			continue
 		}
 
@@ -141,7 +142,7 @@ func ParseSpeedString(speedStr string) (float64, error) {
 	switch {
 	case strings.HasPrefix(unit, "bytes"):
 		return value, nil
-	case strings.HasPrefix(unit, "KB"):
+	case strings.HasPrefix(unit, "kB"):
 		return value * 1024, nil
 	case strings.HasPrefix(unit, "MB"):
 		return value * 1024 * 1024, nil
