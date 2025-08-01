@@ -132,7 +132,7 @@ func ParseSpeedString(speedStr string) (float64, error) {
 	}
 
 	valueStr := parts[0]              // "223.9"
-	unit := strings.ToUpper(parts[1]) // "KB/SEC"
+	unit := strings.ToUpper(parts[1]) // "转大写"
 
 	value, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
@@ -140,9 +140,9 @@ func ParseSpeedString(speedStr string) (float64, error) {
 	}
 
 	switch {
-	case strings.HasPrefix(unit, "bytes"):
+	case strings.HasPrefix(unit, "B"):
 		return value, nil
-	case strings.HasPrefix(unit, "kB"):
+	case strings.HasPrefix(unit, "KB"):
 		return value * 1024, nil
 	case strings.HasPrefix(unit, "MB"):
 		return value * 1024 * 1024, nil
